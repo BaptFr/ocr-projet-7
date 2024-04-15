@@ -14,9 +14,13 @@ exports.getAllBooks = (req, res, next) => {
     });
 };
 
+//Mieux notés !!
+
+/*
 exports.getBestBooks= (req, res, next) => {
- //Voir critères
+
 };
+*/
 
 exports.getOneBook = (req, res, next) => {
   Book.findOne({
@@ -44,14 +48,14 @@ exports.createBook = (req, res, next) => {
     .catch(error => res.status(400).json({ error: error}));
 };
 
-exports.modifyBook =(eq, res, next) => {
+exports.modifyBook =(req, res, next) => {
   Book.updateOne ({_id: req.params.id },  {...req.body, _id: req.params.id })
     .then (() =>res.status(200).json({messae: 'Livre modifié.'}))
     .catch(error => res.status(400).json({ error }));
 };
 
 exports.deleteBook = (req, res, next) => {
-  Book.deleteOne ({_is: req.params.id})
+  Book.deleteOne ({_id: req.params.id})
   .then(() => res.status(200).json({message: 'Livre supprimé.'}))
   .catch(error => res.status(400).json ({ error }));
 };

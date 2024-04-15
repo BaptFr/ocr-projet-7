@@ -1,20 +1,10 @@
 const express = require ('express');
-const bodyParser = require ('body-parser');
 const mongoose = require('mongoose');
-const Book = require('./models/Book')
-
 
 const bookRoutes = require('./routes/book');
+const userRoutes = require('./routes/user');
 
-mongoose.connect('mongodb+srv://baptistesalazar:OcrMongo@cluster0.vuo5qlp.mongodb.net/',
-
-  { useNewUrlParser: true,
-    useUnifiedTopology: true })
-.then(() => console.log('Connexion à MongoDB réussie !'))
-.catch(() => console.log('Connexion à MongoDB échouée !'));
-  
 const app = express();
-
 app.use(express.json());
  
 app.use((req, res, next) => {
@@ -24,9 +14,15 @@ app.use((req, res, next) => {
     next();
 });
 
-app.use(bodyParser.json());
+mongoose.connect('mongodb+srv://baptistesalazar:OcrMongo@cluster0.vuo5qlp.mongodb.net/',
+  { useNewUrlParser: true,
+    useUnifiedTopology: true })
+.then(() =>  console.log('Connexion à MongoDB réussie !'))        
+.catch(() => console.log('Connexion à MongoDB échouée !'));
+  
 
 app.use('/api/books', bookRoutes);
+app.use('/api/auth', userRoutes);
 
 
 module.exports = app;
