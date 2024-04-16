@@ -20,7 +20,6 @@ mongoose.connect('mongodb+srv://baptistesalazar:OcrMongo@cluster0.vuo5qlp.mongod
 .then(() =>  console.log('Connexion à MongoDB réussie !'))        
 .catch(() => console.log('Connexion à MongoDB échouée !'));
   
-
 app.use('/api/books', bookRoutes);
 app.use('/api/auth', userRoutes);
 
