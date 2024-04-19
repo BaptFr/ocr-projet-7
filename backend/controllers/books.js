@@ -1,6 +1,7 @@
 const Book = require('../models/Book');
 const fs = require('fs');
 
+//TOUS LES LIVRES SANS AUTHENTIFICATION
 exports.getAllBooks = (req, res, next) => {
   Book.find()
   .then(
@@ -22,21 +23,16 @@ exports.getBestBooks= (req, res, next) => {
 };
 */
 
+//CONSULTER UN LIVRE
 exports.getOneBook = (req, res, next) => {
-  Book.findOne({
-    _id: req.params.id
-  }).then(
-    (book) => {
-      res.status(200).json(book)
-    }
-  ).catch(
-    (error) => {
-      res.status(404).json({
-        error: error
-      });
-    });
+  Book.findOne({ _id: req.params.id })
+      .then(book => res.status(200).json(book))
+      .catch(error => res.status(404).json({ error }));
 };
 
+
+
+// CRÉATION D'UN LIVRE
 exports.createBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
@@ -54,6 +50,8 @@ exports.createBook = (req, res, next) => {
   })
 };
 
+
+//MODIFICATION D'UN LIVRE
 exports.modifyBook =(req, res, next) => {
   const bookObject = req.file ? {
     ...JSON.parse(req.body.book),
@@ -77,7 +75,7 @@ exports.modifyBook =(req, res, next) => {
   });
 };
   
-
+//SUPPRESSION D'UN LIVRE
 exports.deleteBook = (req, res, next) => {
   Book.findOne({_id: req.params.id})
     .then(book => {
