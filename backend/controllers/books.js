@@ -15,7 +15,7 @@ exports.getAllBooks = (req, res, next) => {
     });
 };
 
-/*LES LIVRES LES MIEUX NOTÉS
+/* <<<<<<<<<<<<<<<*LES LIVRES LES MIEUX NOTÉS>>>>>>>>>>>>>>>>
 exports.bestRatingBooks = (req, res, next) => {
   Book.find()
   });
@@ -67,16 +67,18 @@ exports.rateOneBook = (req, res, next) => {
     });
 };
 
+// <<<<<<<<<<<< MISE A JOUR EFFECTUÉ MAIS UNDEFINED OK APRES RAFRAICHISSEMENT  >>>>>>>>>>>>>>>
+
+
 
 
 // CRÉATION D'UN LIVRE
 exports.createBook = (req, res, next) => {
-
-  //Récupération de l'userId de l'utilisateur créant le livre
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
   const book = new Book({
+    //Récupération de l'userId et infos du livre
     ...bookObject,
     userId : req.auth.userId,
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
@@ -93,6 +95,7 @@ exports.createBook = (req, res, next) => {
 
 //MODIFICATION D'UN LIVRE
 exports.modifyBook =(req, res, next) => {
+  //Si modification de l'image
   const bookObject = req.file ? {
     ...JSON.parse(req.body.book),
     imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
@@ -102,9 +105,11 @@ exports.modifyBook =(req, res, next) => {
 
   Book.findOne({_id: req.params.id})
   .then ((book) => {
+    //Vérification de l'userId
     if(book.userId !=req.auth.userId) {
       res.status(401).json({message : 'Non-autorisé'});
     }else{
+      //Modification des informations du livre
       Book.updateOne ({_id: req.params.id },  {...bookObject, _id: req.params.id })
       .then (() =>res.status(200).json({message: 'Livre modifié.'}))
       .catch(error => res.status(401).json({ error }));
@@ -117,11 +122,15 @@ exports.modifyBook =(req, res, next) => {
 
 //SUPPRESSION D'UN LIVRE
 exports.deleteBook = (req, res, next) => {
-  Book.findOne({_id: req.params.id})
+
+  //Vérification Id
+  Book.findOne({_id: req.params.id})                      
     .then(book => {
       if(book.userId!= req.auth.userId) {
         res.status(401).json({message: 'Non-autorisé'});
       } else {
+
+        //Suppression image puis livre
         const filename = book.imageUrl.split('/images/')[1];
         fs.unlink(`images/${filename}`, () => {
           Book.deleteOne({_id: req.params.id})
