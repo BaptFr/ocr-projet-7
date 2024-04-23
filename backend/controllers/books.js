@@ -5,21 +5,30 @@ const fs = require('fs');
 //TOUS LES LIVRES 
 exports.getAllBooks = (req, res, next) => {
   Book.find()
-  .then(
-    (books) => { 
-      res.status(200).json(books); 
-    })
-  .catch(
-    (error) => {
-      res.status(400).json({ error: error });
-    });
+    .then((books) => { 
+        res.status(200).json(books); 
+      })
+    .catch(
+      (error) => {
+        res.status(400).json({ error: error });
+      });
 };
 
-/* <<<<<<<<<<<<<<<*LES LIVRES LES MIEUX NOTÉS>>>>>>>>>>>>>>>>
+
+                                                                        
 exports.bestRatingBooks = (req, res, next) => {
   Book.find()
-  });
-}; */
+    .sort({ averageRating: -1 })
+    .limit(3)
+    .then((books) => {
+      // Si aucun livre n'est trouvé, renvoyer un tableau vide
+      const responseBooks = books.length > 0 ? books : [];
+      res.status(200).json(responseBooks);
+    })
+    .catch((error) => {
+      res.status(500).json({ error: error.message })
+    });
+}; 
 
 
 //CONSULTER UN LIVRE
@@ -31,7 +40,7 @@ exports.getOneBook = (req, res, next) => {
 };
 
 
-//NOTER UN LIVRE
+//NOTER UN LIVRE                                                                   <<<<<<<<<<<<<<<<VERIF USERID >>>>>>>>>>>>>>
 exports.rateOneBook = (req, res, next) => {
   Book.findOne({_id: req.params.id})
     //Si déjà noté par l'utilisaeur sa note apparait
@@ -50,20 +59,18 @@ exports.rateOneBook = (req, res, next) => {
 
       //Calcul de la nouvelle moyenne de notation du livre
       const totalRatings = book.ratings.length;
-      const totalGrade = book.ratings.reduce((acc, curr) => acc + curr.grade, 0); //Méthode reduce. Itération calcul de la somme totale de notations
+      const totalGrade = book.ratings.reduce((acc, curr) => acc + curr.grade, 0); //Méthode reduce
       const newAverageRating = totalRatings > 0 ? totalGrade / totalRatings : 0; //Calcul de la moyenne
       console.log(newAverageRating);
 
-      //Mise à jour de la moyenne de notation et sauvegarde du livre dans la bdd
+      //Renvoi des informations mises à jour et sauvegarde dans la bdd
       book.averageRating = newAverageRating;
-      return book.save(); 
+      return book.save().then(updatedBook => {
+        res.status(200).json(updatedBook);
+      });
     })
-
-    .then(() => {
-      res.satuts(200).json({message:'Notation ajoutée.'});
-    })
-
-    .catch( (error) => { res.status(400).json ({error})
+    .catch((error) => {
+      res.status(400).json({ error });
     });
 };
 
