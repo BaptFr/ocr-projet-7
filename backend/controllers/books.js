@@ -14,8 +14,7 @@ exports.getAllBooks = (req, res, next) => {
       });
 };
 
-
-                                                                        
+                                                                  
 exports.bestRatingBooks = (req, res, next) => {
   Book.find()
     .sort({ averageRating: -1 })
@@ -40,14 +39,17 @@ exports.getOneBook = (req, res, next) => {
 };
 
 
-//NOTER UN LIVRE                                                                   <<<<<<<<<<<<<<<<VERIF USERID >>>>>>>>>>>>>>
+//NOTER UN LIVRE                                                                   
 exports.rateOneBook = (req, res, next) => {
   Book.findOne({_id: req.params.id})
-    //Si déjà noté par l'utilisaeur sa note apparait
     .then ((book) => {
-      //Condition : Vérification du livre
+      //Conditions : Vérification du livre et vérification si l'utilisateur a déjà noté le livre
       if(!book){
         return res.status(404).json({ message:'Livre non trouvé'});
+      }
+      const alreadyRated = book.ratings.find(rating => rating.userId === req.body.userId);
+      if (alreadyRated) {
+        return res.status(400).json({ message: 'Vous avez déjà noté ce livre' });
       }
       
       //Envoi de la nouvelle notation puis sauvegarde base de données 
@@ -73,10 +75,6 @@ exports.rateOneBook = (req, res, next) => {
       res.status(400).json({ error });
     });
 };
-
-// <<<<<<<<<<<< MISE A JOUR EFFECTUÉ MAIS UNDEFINED OK APRES RAFRAICHISSEMENT  >>>>>>>>>>>>>>>
-
-
 
 
 // CRÉATION D'UN LIVRE
@@ -115,12 +113,21 @@ exports.modifyBook =(req, res, next) => {
     //Vérification de l'userId
     if(book.userId !=req.auth.userId) {
       res.status(401).json({message : 'Non-autorisé'});
-    }else{
-      //Modification des informations du livre
-      Book.updateOne ({_id: req.params.id },  {...bookObject, _id: req.params.id })
+    }
+    //Remplacement de l'ancienne image par la nouvelle
+    if (req.file && book.imageUrl) {
+      const filename = book.imageUrl.split('/images/')[1];
+      fs.unlink(`images/${filename}`, (error) => {
+        if (error) {
+          console.error("Erreur lors de la suppression de l'ancienne image :", error);
+        }
+      });
+    }
+    //Modification des informations du livre
+    Book.updateOne ({_id: req.params.id },  {...bookObject, _id: req.params.id })
       .then (() =>res.status(200).json({message: 'Livre modifié.'}))
       .catch(error => res.status(401).json({ error }));
-    };
+    ;
   })
   .catch((error) => { res.status(400).json ({error})}
   );
@@ -139,11 +146,15 @@ exports.deleteBook = (req, res, next) => {
 
         //Suppression image puis livre
         const filename = book.imageUrl.split('/images/')[1];
-        fs.unlink(`images/${filename}`, () => {
+        fs.unlink(`images/${filename}`, (error) => {
+          if (error) {
+            return res.status(500).json({ error: 'Erreur lors de la suppression de l\'image' });
+          }
           Book.deleteOne({_id: req.params.id})
           .then(() => res.status(200).json({message: 'Livre supprimé.'}))
           .catch(error => res.status(401).json ({ error }));
         });
       }
     })
+    .catch(error => res.status(500).json({ error }));
 };
