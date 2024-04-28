@@ -1,5 +1,7 @@
 const Book = require('../models/Book');
 const fs = require('fs');
+const sharp = require('sharp');
+
 
 
 //TOUS LES LIVRES 
@@ -82,56 +84,113 @@ exports.createBook = (req, res, next) => {
   const bookObject = JSON.parse(req.body.book);
   delete bookObject._id;
   delete bookObject._userId;
-  const book = new Book({
-    //Récupération de l'userId et infos du livre
-    ...bookObject,
-    userId : req.auth.userId,
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`,
-    averageRating: bookObject.ratings[0].grade 
-  });
-  //Ajout et sauvegarde du nouveau livre dans la base de données
-  book.save()
-    .then(() => { res.status(201).json({ message: 'Livre envoyé enregistré avec succès.'});
-    })
-    .catch(error  => {res.status(400).json({ error });
-  })
+
+  const resizedFileName = `resized-${req.file.filename.replace(/\.[^.]+$/, '')}.webp`; //supp et changement de l'extension
+  const resizedImagePath = `./images/${resizedFileName}`;
+
+  sharp.cache(false); // Nécessaire pour suppr image d'origine
+  sharp(req.file.path)
+    .resize({ fit: 'contain'})
+    .toFormat('webp')
+    .toFile(resizedImagePath, (err, info) => {
+      if (err) {
+        return res.status(401).json({ error: err.message });
+      }
+
+      // Suppr image originale après redimensionnement
+      fs.unlink(req.file.path, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error('Erreur lors de la suppression du fichier original:', unlinkErr);
+          return res.status(500).json({ error: 'Erreur lors de la suppression du fichier original(redimensionné)' });
+        }
+
+        // Nouveau Book avec l'URL de l'img redimensionnée
+        const book = new Book({
+          ...bookObject,
+          userId : req.auth.userId,
+          imageUrl: `${req.protocol}://${req.get('host')}/images/${resizedFileName}`, //Nouveau nom de l'img
+          averageRating: bookObject.ratings[0].grade 
+        });
+
+        //Ajout et sauvegarde du nouveau livre dans la base de données
+        book.save()
+          .then(() => { res.status(201).json({ message: 'Livre envoyé enregistré avec succès.'});
+          })
+          .catch((error) => {
+            //Si image présente lors de l'erreur d'ajout : suppression de l'image redimensionnée
+            if (book.imageUrl) {
+              const filename = book.imageUrl.split('/images/')[1];
+              fs.unlink(`images/${filename}`, (deleteErr) => {
+                if (deleteErr) {
+                  console.error('Erreur lors de la suppression du fichier redimensionné:', deleteErr);
+                }
+              });
+            }
+            res.status(400).json({ error });
+          });
+      });
+    });
 };
 
 
 //MODIFICATION D'UN LIVRE
 exports.modifyBook =(req, res, next) => {
-  //Si modification de l'image
-  const bookObject = req.file ? {
-    ...JSON.parse(req.body.book),
-    imageUrl: `${req.protocol}://${req.get('host')}/images/${req.file.filename}`
-  } : {...req.body };
-
+  const bookObject = JSON.parse(req.body.book);
   delete bookObject._userId;
 
+  //Vérification de l'userId
   Book.findOne({_id: req.params.id})
   .then ((book) => {
-    //Vérification de l'userId
     if(book.userId !=req.auth.userId) {
       res.status(401).json({message : 'Non-autorisé'});
     }
-    //Remplacement de l'ancienne image par la nouvelle
+
+    //Suppr de l'ancienne image
     if (req.file && book.imageUrl) {
-      const filename = book.imageUrl.split('/images/')[1];
-      fs.unlink(`images/${filename}`, (error) => {
-        if (error) {
-          console.error("Erreur lors de la suppression de l'ancienne image :", error);
+      const oldFilename = book.imageUrl.split('/images/')[1];
+      fs.unlink(`images/${oldFilename}`, (unlinkErr) => {
+        if (unlinkErr) {
+          console.error("Erreur lors de la suppression de l'ancienne image :", unlinkErr);
         }
       });
     }
-    //Modification des informations du livre
-    Book.updateOne ({_id: req.params.id },  {...bookObject, _id: req.params.id })
-      .then (() =>res.status(200).json({message: 'Livre modifié.'}))
-      .catch(error => res.status(401).json({ error }));
-    ;
-  })
-  .catch((error) => { res.status(400).json ({error})}
-  );
-};
+ 
+    //Si une nouvelle image : sharp et màj de l'URL
+    if (req.file) {
+      const resizedFileName = `resized-${req.file.filename.replace(/\.[^.]+$/, '')}.webp`; //supp du nom et changement de l'extension
+      const resizedImagePath = `./images/${resizedFileName}`;
+
+      sharp.cache(false);  //Suppr image avant redimensionnement
+      sharp(req.file.path)
+        .resize({ fit: 'contain' })
+        .toFormat('webp')
+        .toFile(resizedImagePath, (err, info) => {
+          if (err) {
+            return res.status(401).json({ error: err.message });
+          }
+
+          // Suppr de l'image originale téléchargée
+          fs.unlink(req.file.path, (unlinkErr) => {
+            if (unlinkErr) {
+              console.error('Erreur lors de la suppr de l image originale(avant redimenssionnement):', unlinkErr);
+            }
+          });
+        });
+
+        // Màj de l'URL de l'image 
+        bookObject.imageUrl = `${req.protocol}://${req.get('host')}/images/${resizedFileName}`;
+    }
+
+    // Màj des informations du livre
+    Book.updateOne({ _id: req.params.id }, { ...bookObject, _id: req.params.id })
+      .then(() => res.status(200).json({ message: 'Livre modifié.' }))
+      .catch((error) => res.status(401).json({ error }));
+    })
+    .catch((error) => res.status(400).json({ error })
+    )
+  };
+  
+
   
 
 //SUPPRESSION D'UN LIVRE

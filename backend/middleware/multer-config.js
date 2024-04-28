@@ -3,7 +3,8 @@ const multer = require('multer');
 const MIME_TYPES = {
     'images/jpg': 'jpg',
     'images/jpeg': 'jpeg',
-    'images/png': 'jpg'
+    'images/png': 'jpg',
+    'image/webp': 'webp'
 };
 
 const storage = multer.diskStorage ({
