@@ -1,6 +1,7 @@
 const express = require ('express');
-const bodyParser = require('body-parser')
+const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
+require('dotenv').config();
 const path = require('path');
 const bookRoutes = require('./routes/book');
 const userRoutes = require('./routes/user');
@@ -15,7 +16,8 @@ app.use((req, res, next) => {
     next();
 });
 
-mongoose.connect('mongodb+srv://baptistesalazar:OcrMongo@cluster0.vuo5qlp.mongodb.net/',
+// Variable d'environnement
+mongoose.connect(process.env.MONGODB_URI,  
   { useNewUrlParser: true,
     useUnifiedTopology: true })
 .then(() =>  console.log('Connexion à MongoDB réussie !'))        

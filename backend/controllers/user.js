@@ -1,9 +1,11 @@
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
+require('dotenv').config(); 
 
 //INSCRIPTION
 exports.signup = (req, res, next) => {
+    //Hashage mdp
     bcrypt.hash(req.body.password, 10)
         .then(hash => {
             const user = new User ({
@@ -16,6 +18,7 @@ exports.signup = (req, res, next) => {
         })
         .catch(error => res.status(500).json({ error }));
 };
+
 
 //LOGIN
 exports.login = (req, res, next) => {
@@ -33,7 +36,7 @@ exports.login = (req, res, next) => {
                         userId: user._id,
                         token: jwt.sign(
                             { userId: user._id },
-                            'RANDOM_TOKEN_SECRET',
+                            process.env.JWT_SECRET,   //Var d'environnement
                             { expiresIn: '24h'}
                         )
                     });

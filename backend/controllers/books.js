@@ -207,7 +207,7 @@ exports.deleteBook = (req, res, next) => {
         const filename = book.imageUrl.split('/images/')[1];
         fs.unlink(`images/${filename}`, (error) => {
           if (error) {
-            return res.status(500).json({ error: 'Erreur lors de la suppression de l\'image' });
+            return res.status(500).json({ error: 'Erreur lors de la suppression de l image' });
           }
           Book.deleteOne({_id: req.params.id})
           .then(() => res.status(200).json({message: 'Livre supprimé.'}))
