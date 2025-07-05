@@ -2,15 +2,8 @@ services:
   - type: web
     name: mon-vieux-grimoire
     env: node
+    rootDir: backend
     buildCommand: |
-      cd frontend && npm install && npm run build
+      cd ../frontend && npm install && npm run build
       cd ../backend && npm install
     startCommand: node server.js
-    envVars:
-      - key: MONGODB_URI
-        value: ton_URI_mongodb
-    buildFilter:
-      paths:
-        - frontend/*
-        - backend/*
-    rootDir: backend
