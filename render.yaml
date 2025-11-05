@@ -1,0 +1,9 @@
+services:
+  - type: web
+    name: mon-vieux-grimoire
+    env: node
+    rootDir: backend
+    buildCommand: |
+      npm run build-client
+      npm install
+    startCommand: node server.js
